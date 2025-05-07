@@ -21,7 +21,7 @@ export default function ReservationForm() {
     // 1) Save to your reservations table
     const { error: insertError } = await supabase
       .from("reservations")
-      .insert([{ phone, message, notifyStaff }]);
+      .insert([{ phone, message }]);
     if (insertError) {
       console.error("Insert error:", insertError);
       setLoading(false);
@@ -31,7 +31,7 @@ export default function ReservationForm() {
     // 2) Invoke Edge Function with phone + message
     const { data: fnData, error: fnError } = await supabase.functions.invoke(
       "reservation",
-      { body: { phone, message } }
+      { body: { phone, message, notifyStaff } }
     );
     if (Notification.permission === "granted") {
       new Notification("Order Received", {
