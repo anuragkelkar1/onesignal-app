@@ -17,11 +17,11 @@ export default function ReservationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+    const notifyStaff = true;
     // 1) Save to your reservations table
     const { error: insertError } = await supabase
       .from("reservations")
-      .insert([{ phone, message }]);
+      .insert([{ phone, message, notifyStaff }]);
     if (insertError) {
       console.error("Insert error:", insertError);
       setLoading(false);
