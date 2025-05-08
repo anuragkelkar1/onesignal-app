@@ -1,6 +1,6 @@
 // src/components/card/ReservationForm.jsx
 
-import React from "react";
+import React, { useEffect } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -21,64 +21,102 @@ export default function ReservationForm() {
   const [dateTime, setDateTime] = React.useState("");
   const [partySize, setPartySize] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [requests, setRequests] = React.useState([]);
 
   const validatePhone = (val) => {
     const phoneRegex = /^\+?\d{10,15}$/;
     if (!phoneRegex.test(val)) {
       setPhoneError("Enter a valid phone number (10–15 digits)");
-    } else {
-      setPhoneError("");
+      return false;
     }
+    setPhoneError("");
+    return true;
   };
+
+  useEffect(() => {
+    if (!phone || phoneError) {
+      setRequests([]);
+      return;
+    }
+
+    // fetch existing reservations for this phone
+    supabase
+      .from("reservations")
+      .select("*")
+      .eq("phone", phone)
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error("Error fetching reservations:", error);
+        else setRequests(data);
+      });
+
+    // subscribe to inserts & updates for this phone
+    const subscription = supabase
+      .channel(`user_res_${phone}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "reservations",
+          filter: `phone=eq.${phone}`,
+        },
+        ({ new: r }) => {
+          setRequests((prev) => [r, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "reservations",
+          filter: `phone=eq.${phone}`,
+        },
+        ({ new: r }) => {
+          setRequests((prev) => prev.map((x) => (x.id === r.id ? r : x)));
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(subscription);
+  }, [phone, phoneError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    validatePhone(phone);
-    if (phoneError) return;
+    if (!validatePhone(phone)) return;
     setLoading(true);
 
     const notifyStaff = true;
 
-    // 1) Save reservation
-    const { error: insertError } = await supabase.from("reservations").insert([
-      {
-        phone,
-        message,
-        reservation_time: dateTime,
-        party_size: partySize,
-      },
-    ]);
+    // save reservation
+    const { data, error: insertError } = await supabase
+      .from("reservations")
+      .insert([
+        { phone, message, reservation_time: dateTime, party_size: partySize },
+      ])
+      .select();
+
     if (insertError) {
       console.error("Insert error:", insertError);
       setLoading(false);
       return;
     }
 
-    // 2) Trigger Edge Function
-    const { data: fnData, error: fnError } = await supabase.functions.invoke(
-      "reservation",
-      {
-        body: {
-          phone,
-          message,
-          dateTime,
-          partySize,
-          notifyStaff,
-        },
-      }
-    );
+    // no need to manually update requests; subscription will handle it
+
+    // trigger notification
+    const { error: fnError } = await supabase.functions.invoke("reservation", {
+      body: { phone, message, dateTime, partySize, notifyStaff },
+    });
     if (Notification.permission === "granted") {
       new Notification("Reservation Received", {
         body: "Thanks! Your reservation has been placed.",
       });
     }
-    if (fnError) {
-      console.error("Function error:", fnError);
-    } else {
-      console.log("Function success:", fnData);
-    }
+    if (fnError) console.error("Function error:", fnError);
 
-    // 3) Reset form
+    // reset form (keep requests visible)
     setPhone("");
     setPhoneError("");
     setMessage("");
@@ -173,6 +211,30 @@ export default function ReservationForm() {
           </CardActions>
         </form>
       </Card>
+
+      {/* User's requests */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6">Your Requests</Typography>
+        {requests.length === 0 ? (
+          <Typography>No reservation requests yet.</Typography>
+        ) : (
+          <Box component="ul" sx={{ listStyle: "none", p: 0 }}>
+            {requests.map((r) => (
+              <Box
+                component="li"
+                key={r.id}
+                sx={{ mb: 2, p: 2, border: "1px solid #ccc", borderRadius: 1 }}
+              >
+                <Typography>
+                  {new Date(r.reservation_time).toLocaleString()} — Party of{" "}
+                  {r.party_size}
+                </Typography>
+                <Typography>Status: {r.admin_response || "Pending"}</Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
