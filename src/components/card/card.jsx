@@ -13,7 +13,7 @@ export default function ReservationForm() {
   const [phone, setPhone] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-
+  const [phoneError, setPhoneError] = React.useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -50,6 +50,14 @@ export default function ReservationForm() {
     setMessage("");
     setLoading(false);
   };
+  const validatePhone = (val) => {
+    const phoneRegex = /^\+?\d{10,15}$/;
+    if (!phoneRegex.test(val)) {
+      setPhoneError("Enter a valid phone number (10–15 digits)");
+    } else {
+      setPhoneError("");
+    }
+  };
 
   return (
     <Box sx={{ minWidth: 400, mx: "auto" }}>
@@ -62,7 +70,6 @@ export default function ReservationForm() {
             >
               Send a Message
             </Typography>
-
             <TextField
               label="Phone Number"
               type="tel"
@@ -70,7 +77,13 @@ export default function ReservationForm() {
               fullWidth
               margin="normal"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              error={!!phoneError}
+              helperText={phoneError}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (phoneError) validatePhone(e.target.value);
+              }}
+              onBlur={(e) => validatePhone(e.target.value)}
             />
 
             <TextField
