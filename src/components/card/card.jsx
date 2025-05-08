@@ -13,18 +13,7 @@ export default function ReservationForm() {
   const [phone, setPhone] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = useState("");
 
-  const validatePhone = (value) => {
-    // simple E.164-ish check: optional +, 10–15 digits
-    const phoneRegex = /^\+?\d{10,15}$/;
-    if (!phoneRegex.test(value)) {
-      setError("Enter a valid phone number (10–15 digits)");
-      return false;
-    }
-    setError("");
-    return true;
-  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -81,15 +70,7 @@ export default function ReservationForm() {
               fullWidth
               margin="normal"
               value={phone}
-              error={!!error}
-              helperText={error}
-              onChange={(e) => {
-                const val = e.target.value;
-                setPhone(val);
-                // re-validate on each change if there was already an error
-                if (error) validatePhone(val);
-              }}
-              onBlur={(e) => validatePhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value)}
             />
 
             <TextField
