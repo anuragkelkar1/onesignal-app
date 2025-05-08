@@ -14,18 +14,11 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import { supabase } from "../../supabaseClient";
 
-// new imports for date & time pickers
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-
 export default function ReservationForm() {
   const [phone, setPhone] = React.useState("");
   const [phoneError, setPhoneError] = React.useState("");
   const [message, setMessage] = React.useState("");
-  const [date, setDate] = React.useState(null);
-  const [time, setTime] = React.useState(null);
+  const [dateTime, setDateTime] = React.useState("");
   const [partySize, setPartySize] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
@@ -41,13 +34,8 @@ export default function ReservationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     validatePhone(phone);
-    if (phoneError || !date || !time) return;
+    if (phoneError) return;
     setLoading(true);
-
-    // combine date + time into a single ISO string
-    const dt = new Date(date);
-    dt.setHours(time.getHours(), time.getMinutes(), 0, 0);
-    const reservationDateTime = dt.toISOString();
 
     const notifyStaff = true;
 
@@ -56,7 +44,7 @@ export default function ReservationForm() {
       {
         phone,
         message,
-        reservation_time: reservationDateTime,
+        reservation_time: dateTime,
         party_size: partySize,
       },
     ]);
@@ -73,7 +61,7 @@ export default function ReservationForm() {
         body: {
           phone,
           message,
-          dateTime: reservationDateTime,
+          dateTime,
           partySize,
           notifyStaff,
         },
@@ -94,108 +82,97 @@ export default function ReservationForm() {
     setPhone("");
     setPhoneError("");
     setMessage("");
-    setDate(null);
-    setTime(null);
+    setDateTime("");
     setPartySize("");
     setLoading(false);
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ minWidth: 400, mx: "auto" }}>
-        <Card variant="outlined">
-          <form onSubmit={handleSubmit}>
-            <CardContent>
-              <Typography
-                gutterBottom
-                sx={{ color: "text.secondary", fontSize: 14 }}
+    <Box sx={{ minWidth: 400, mx: "auto" }}>
+      <Card variant="outlined">
+        <form onSubmit={handleSubmit}>
+          <CardContent>
+            <Typography
+              gutterBottom
+              sx={{ color: "text.secondary", fontSize: 14 }}
+            >
+              Make Your Reservation
+            </Typography>
+
+            <TextField
+              label="Phone Number"
+              type="tel"
+              required
+              fullWidth
+              margin="normal"
+              value={phone}
+              error={!!phoneError}
+              helperText={phoneError}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (phoneError) validatePhone(e.target.value);
+              }}
+              onBlur={(e) => validatePhone(e.target.value)}
+            />
+
+            <TextField
+              label="Date & Time"
+              type="datetime-local"
+              required
+              fullWidth
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+              value={dateTime}
+              onChange={(e) => setDateTime(e.target.value)}
+            />
+
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel id="party-size-label">Party Size</InputLabel>
+              <Select
+                labelId="party-size-label"
+                label="Party Size"
+                value={partySize}
+                onChange={(e) => setPartySize(e.target.value)}
               >
-                Make Your Reservation
-              </Typography>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-              <TextField
-                label="Phone Number"
-                type="tel"
-                required
-                fullWidth
-                margin="normal"
-                value={phone}
-                error={!!phoneError}
-                helperText={phoneError}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  if (phoneError) validatePhone(e.target.value);
-                }}
-                onBlur={(e) => validatePhone(e.target.value)}
-              />
+            <TextField
+              label="Message"
+              required
+              fullWidth
+              margin="normal"
+              multiline
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </CardContent>
 
-              <DatePicker
-                label="Reservation Date"
-                value={date}
-                onChange={(newDate) => setDate(newDate)}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth margin="normal" required />
-                )}
-              />
-
-              <TimePicker
-                label="Reservation Time"
-                value={time}
-                onChange={(newTime) => setTime(newTime)}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth margin="normal" required />
-                )}
-              />
-
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel id="party-size-label">Party Size</InputLabel>
-                <Select
-                  labelId="party-size-label"
-                  label="Party Size"
-                  value={partySize}
-                  onChange={(e) => setPartySize(e.target.value)}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
-                    <MenuItem key={size} value={size}>
-                      {size}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <TextField
-                label="Message"
-                required
-                fullWidth
-                margin="normal"
-                multiline
-                rows={4}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </CardContent>
-
-            <CardActions>
-              <Button
-                type="submit"
-                size="small"
-                sx={{ mx: "auto" }}
-                disabled={
-                  !phone ||
-                  !!phoneError ||
-                  !date ||
-                  !time ||
-                  !partySize ||
-                  !message ||
-                  loading
-                }
-              >
-                {loading ? "Sending…" : "Reserve"}
-              </Button>
-            </CardActions>
-          </form>
-        </Card>
-      </Box>
-    </LocalizationProvider>
+          <CardActions>
+            <Button
+              type="submit"
+              size="small"
+              sx={{ mx: "auto" }}
+              disabled={
+                !phone ||
+                !!phoneError ||
+                !dateTime ||
+                !partySize ||
+                !message ||
+                loading
+              }
+            >
+              {loading ? "Sending…" : "Reserve"}
+            </Button>
+          </CardActions>
+        </form>
+      </Card>
+    </Box>
   );
 }
