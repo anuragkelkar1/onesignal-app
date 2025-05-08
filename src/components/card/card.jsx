@@ -31,7 +31,7 @@ export default function ReservationForm() {
     // 2) Invoke Edge Function with phone + message
     const { data: fnData, error: fnError } = await supabase.functions.invoke(
       "reservation",
-      { body: { phone, message, notifyStaff } }
+      { body: { phone, message } }
     );
     if (Notification.permission === "granted") {
       new Notification("Order Received", {
