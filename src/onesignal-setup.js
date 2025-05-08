@@ -10,9 +10,9 @@ if (typeof window !== "undefined") {
       // Initialize the OneSignal Web SDK
       OneSignal.init({
         appId: import.meta.env.VITE_ONESIGNAL_APP_ID,
-        // allowLocalhostAsSecureOrigin: true, // enable for local dev
+        allowLocalhostAsSecureOrigin: true, // enable for local dev
         notifyButton: {
-          enable: true, // show the subscription bell
+          enable: false, // show the subscription bell
         },
       });
     });
