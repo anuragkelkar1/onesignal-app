@@ -1,6 +1,6 @@
 // src/components/card/ReservationForm.jsx
 
-import React, { useEffect } from "react";
+import React from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -27,85 +27,42 @@ export default function ReservationForm() {
     const phoneRegex = /^\+?\d{10,15}$/;
     if (!phoneRegex.test(val)) {
       setPhoneError("Enter a valid phone number (10–15 digits)");
-      return false;
+    } else {
+      setPhoneError("");
     }
-    setPhoneError("");
-    return true;
   };
-
-  useEffect(() => {
-    if (!phone || phoneError) {
-      setRequests([]);
-      return;
-    }
-
-    // fetch existing reservations for this phone
-    supabase
-      .from("reservations")
-      .select("*")
-      .eq("phone", phone)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) console.error("Error fetching reservations:", error);
-        else setRequests(data);
-      });
-
-    // subscribe to inserts & updates for this phone
-    const subscription = supabase
-      .channel(`user_res_${phone}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "reservations",
-          filter: `phone=eq.${phone}`,
-        },
-        ({ new: r }) => {
-          setRequests((prev) => [r, ...prev]);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "reservations",
-          filter: `phone=eq.${phone}`,
-        },
-        ({ new: r }) => {
-          setRequests((prev) => prev.map((x) => (x.id === r.id ? r : x)));
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(subscription);
-  }, [phone, phoneError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validatePhone(phone)) return;
+    validatePhone(phone);
+    if (phoneError) return;
     setLoading(true);
 
     const notifyStaff = true;
 
-    // save reservation
+    // 1) Save reservation
     const { data, error: insertError } = await supabase
       .from("reservations")
       .insert([
-        { phone, message, reservation_time: dateTime, party_size: partySize },
+        {
+          phone,
+          message,
+          reservation_time: dateTime,
+          party_size: partySize,
+        },
       ])
       .select();
-
     if (insertError) {
       console.error("Insert error:", insertError);
       setLoading(false);
       return;
     }
 
-    // no need to manually update requests; subscription will handle it
+    const newReq = data[0];
+    // add to local requests list
+    setRequests((prev) => [...prev, newReq]);
 
-    // trigger notification
+    // 2) Trigger Edge Function
     const { error: fnError } = await supabase.functions.invoke("reservation", {
       body: { phone, message, dateTime, partySize, notifyStaff },
     });
@@ -116,7 +73,7 @@ export default function ReservationForm() {
     }
     if (fnError) console.error("Function error:", fnError);
 
-    // reset form (keep requests visible)
+    // 3) Reset form
     setPhone("");
     setPhoneError("");
     setMessage("");
@@ -212,7 +169,7 @@ export default function ReservationForm() {
         </form>
       </Card>
 
-      {/* User's requests */}
+      {/* User's requests section */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="h6">Your Requests</Typography>
         {requests.length === 0 ? (
