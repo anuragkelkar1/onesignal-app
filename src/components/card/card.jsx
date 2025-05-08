@@ -1,4 +1,5 @@
-// src/components/card/card.jsx
+// src/components/card/ReservationForm.jsx
+
 import React from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -7,49 +8,20 @@ import CardActions from "@mui/material/CardActions";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import { supabase } from "../../supabaseClient";
 
 export default function ReservationForm() {
   const [phone, setPhone] = React.useState("");
-  const [message, setMessage] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
   const [phoneError, setPhoneError] = React.useState("");
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const notifyStaff = true;
-    // 1) Save to your reservations table
-    const { error: insertError } = await supabase
-      .from("reservations")
-      .insert([{ phone, message }]);
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      setLoading(false);
-      return;
-    }
+  const [message, setMessage] = React.useState("");
+  const [dateTime, setDateTime] = React.useState("");
+  const [partySize, setPartySize] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
-    // 2) Invoke Edge Function with phone + message
-    const { data: fnData, error: fnError } = await supabase.functions.invoke(
-      "reservation",
-      { body: { phone, message, notifyStaff } }
-    );
-    if (Notification.permission === "granted") {
-      new Notification("Order Received", {
-        body: "Thanks! Your order has been placed and is being processed.",
-      });
-    }
-    if (fnError) {
-      console.error("Function error:", fnError);
-      // If you want the raw JSON response body, you can fetch it via fnError.message or inspect fnError
-    } else {
-      console.log("Function success:", fnData);
-    }
-
-    // 3) Reset form
-    setPhone("");
-    setMessage("");
-    setLoading(false);
-  };
   const validatePhone = (val) => {
     const phoneRegex = /^\+?\d{10,15}$/;
     if (!phoneRegex.test(val)) {
@@ -57,6 +29,62 @@ export default function ReservationForm() {
     } else {
       setPhoneError("");
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    validatePhone(phone);
+    if (phoneError) return;
+    setLoading(true);
+
+    const notifyStaff = true;
+
+    // 1) Save reservation
+    const { error: insertError } = await supabase.from("reservations").insert([
+      {
+        phone,
+        message,
+        reservation_time: dateTime,
+        party_size: partySize,
+      },
+    ]);
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      setLoading(false);
+      return;
+    }
+
+    // 2) Trigger Edge Function
+    const { data: fnData, error: fnError } = await supabase.functions.invoke(
+      "reservation",
+      {
+        body: {
+          phone,
+          message,
+          dateTime,
+          partySize,
+          notifyStaff,
+        },
+      }
+    );
+    if (Notification.permission === "granted") {
+      new Notification("Reservation Received", {
+        body: "Thanks! Your reservation has been placed.",
+      });
+    }
+    if (fnError) {
+      console.error("Function error:", fnError);
+    } else {
+      console.log("Function success:", fnData);
+    }
+
+    // 3) Reset form
+    setPhone("");
+    setPhoneError("");
+    setMessage("");
+    setDateTime("");
+    setPartySize("");
+    setLoading(false);
   };
 
   return (
@@ -68,8 +96,9 @@ export default function ReservationForm() {
               gutterBottom
               sx={{ color: "text.secondary", fontSize: 14 }}
             >
-              Send a Message
+              Make Your Reservation
             </Typography>
+
             <TextField
               label="Phone Number"
               type="tel"
@@ -85,6 +114,33 @@ export default function ReservationForm() {
               }}
               onBlur={(e) => validatePhone(e.target.value)}
             />
+
+            <TextField
+              label="Date & Time"
+              type="datetime-local"
+              required
+              fullWidth
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+              value={dateTime}
+              onChange={(e) => setDateTime(e.target.value)}
+            />
+
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel id="party-size-label">Party Size</InputLabel>
+              <Select
+                labelId="party-size-label"
+                label="Party Size"
+                value={partySize}
+                onChange={(e) => setPartySize(e.target.value)}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             <TextField
               label="Message"
@@ -103,9 +159,16 @@ export default function ReservationForm() {
               type="submit"
               size="small"
               sx={{ mx: "auto" }}
-              disabled={!phone || !message || loading}
+              disabled={
+                !phone ||
+                !!phoneError ||
+                !dateTime ||
+                !partySize ||
+                !message ||
+                loading
+              }
             >
-              {loading ? "Sending…" : "Send"}
+              {loading ? "Sending…" : "Reserve"}
             </Button>
           </CardActions>
         </form>
