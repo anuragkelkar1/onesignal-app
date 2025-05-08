@@ -1,6 +1,6 @@
 // src/components/card/ReservationForm.jsx
 
-import React from "react";
+import React, { useEffect } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -27,42 +27,50 @@ export default function ReservationForm() {
     const phoneRegex = /^\+?\d{10,15}$/;
     if (!phoneRegex.test(val)) {
       setPhoneError("Enter a valid phone number (10–15 digits)");
-    } else {
-      setPhoneError("");
+      return false;
     }
+    setPhoneError("");
+    return true;
   };
+
+  const fetchRequests = async () => {
+    if (!validatePhone(phone)) return;
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("*")
+      .eq("phone", phone)
+      .order("created_at", { ascending: false });
+    if (error) console.error("Error fetching reservations:", error);
+    else setRequests(data);
+  };
+
+  useEffect(() => {
+    if (phone && validatePhone(phone)) {
+      fetchRequests();
+    } else {
+      setRequests([]);
+    }
+  }, [phone]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    validatePhone(phone);
-    if (phoneError) return;
+    if (!validatePhone(phone)) return;
     setLoading(true);
 
     const notifyStaff = true;
-
-    // 1) Save reservation
-    const { data, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("reservations")
       .insert([
-        {
-          phone,
-          message,
-          reservation_time: dateTime,
-          party_size: partySize,
-        },
-      ])
-      .select();
+        { phone, message, reservation_time: dateTime, party_size: partySize },
+      ]);
     if (insertError) {
       console.error("Insert error:", insertError);
       setLoading(false);
       return;
     }
 
-    const newReq = data[0];
-    // add to local requests list
-    setRequests((prev) => [...prev, newReq]);
+    await fetchRequests();
 
-    // 2) Trigger Edge Function
     const { error: fnError } = await supabase.functions.invoke("reservation", {
       body: { phone, message, dateTime, partySize, notifyStaff },
     });
@@ -73,9 +81,6 @@ export default function ReservationForm() {
     }
     if (fnError) console.error("Function error:", fnError);
 
-    // 3) Reset form
-    setPhone("");
-    setPhoneError("");
     setMessage("");
     setDateTime("");
     setPartySize("");
@@ -169,9 +174,12 @@ export default function ReservationForm() {
         </form>
       </Card>
 
-      {/* User's requests section */}
-      <Box sx={{ mt: 4 }}>
+      {/* User's Requests */}
+      <Box sx={{ mt: 4, textAlign: "center" }}>
         <Typography variant="h6">Your Requests</Typography>
+        <Button variant="text" onClick={fetchRequests} disabled={!phone}>
+          Refresh
+        </Button>
         {requests.length === 0 ? (
           <Typography>No reservation requests yet.</Typography>
         ) : (
@@ -186,7 +194,9 @@ export default function ReservationForm() {
                   {new Date(r.reservation_time).toLocaleString()} — Party of{" "}
                   {r.party_size}
                 </Typography>
-                <Typography>Status: {r.admin_response || "Pending"}</Typography>
+                <Typography>
+                  Status: {r.adminResponse ? "Confirmed" : "Pending"}
+                </Typography>
               </Box>
             ))}
           </Box>
