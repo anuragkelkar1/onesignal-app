@@ -57,14 +57,14 @@ export default function App() {
       <Toolbar />
 
       <Container maxWidth={false} disableGutters sx={{ mt: 2, mb: 4 }}>
-        <Box sx={{ borderBottom: "1px solid #ddd", p: 2 }}>
+        {/* <Box sx={{ borderBottom: "1px solid #ddd", p: 2 }}>
           <nav>
             <Link to="/" style={{ marginRight: 16 }}>
               Home
             </Link>
             <Link to="/dashboard">Dashboard</Link>
           </nav>
-        </Box>
+        </Box> */}
 
         <Routes>
           <Route path="/" element={<Home onSuccess={notifyUser} />} />
