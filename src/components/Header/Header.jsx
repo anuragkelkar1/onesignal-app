@@ -62,7 +62,7 @@ function Header() {
               textDecoration: "none",
             }}
           >
-            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/dashboard">{title}</Link>
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
