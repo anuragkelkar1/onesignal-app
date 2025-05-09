@@ -89,7 +89,7 @@ export default function ReservationForm() {
     }
 
     await fetchRequests();
-    console.log(oneSignalUserId);
+
     // 2) Trigger Edge Function, include OneSignal ID if available
     const payload = { phone, message, dateTime, partySize, notifyStaff };
     if (oneSignalUserId) {
