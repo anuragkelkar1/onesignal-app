@@ -1,4 +1,6 @@
 import "./onesignal-setup.js";
+import "core-js";
+
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { createRoot } from "react-dom/client";

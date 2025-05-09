@@ -74,11 +74,8 @@ export default function ReservationForm() {
     const { error: fnError } = await supabase.functions.invoke("reservation", {
       body: { phone, message, dateTime, partySize, notifyStaff },
     });
-    if (Notification.permission === "granted") {
-      new Notification("Reservation Received", {
-        body: "Thanks! Your reservation has been placed.",
-      });
-    }
+    // if (Notification.permission === "granted") {
+    // }
     if (fnError) console.error("Function error:", fnError);
 
     setMessage("");
