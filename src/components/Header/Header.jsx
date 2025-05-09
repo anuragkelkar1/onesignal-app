@@ -12,6 +12,7 @@ import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import { useLocation } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 
 const pages = [];
 const settings = ["Profile", "Account", "Dashboard", "Logout"];
@@ -51,18 +52,17 @@ function Header() {
             variant="h6"
             noWrap
             component="a"
-            href="/dashboard"
             sx={{
               mr: 2,
               display: { xs: "none", md: "flex" },
               fontFamily: "monospace",
               fontWeight: 600,
-              letterSpacing: ".3rem",
+              letterSpacing: ".2rem",
               color: "inherit",
               textDecoration: "none",
             }}
           >
-            {title}
+            <Link to="/dashboard">Dashboard</Link>
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
