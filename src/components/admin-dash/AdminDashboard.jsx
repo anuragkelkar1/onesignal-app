@@ -88,7 +88,7 @@ export default function AdminDashboard() {
     <Box
       sx={{
         padding: 4,
-        width: "100vw",
+        // width: "100vw",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

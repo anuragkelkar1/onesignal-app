@@ -13,6 +13,10 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import { supabase } from "../../supabaseClient";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 export default function ReservationForm() {
   const [phone, setPhone] = React.useState("");
@@ -112,16 +116,22 @@ export default function ReservationForm() {
               onBlur={(e) => validatePhone(e.target.value)}
             />
 
-            <TextField
-              label="Date & Time"
-              type="datetime-local"
-              required
-              fullWidth
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-              value={dateTime}
-              onChange={(e) => setDateTime(e.target.value)}
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateTimePicker
+                label="Date & Time"
+                value={dateTime ? dayjs(dateTime) : null}
+                onChange={(newValue) => {
+                  if (newValue) setDateTime(newValue.toISOString()); // store ISO string
+                }}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal",
+                    required: true,
+                  },
+                }}
+              />
+            </LocalizationProvider>
 
             <FormControl fullWidth margin="normal" required>
               <InputLabel id="party-size-label">Party Size</InputLabel>
