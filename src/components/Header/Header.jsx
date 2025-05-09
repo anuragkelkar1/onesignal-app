@@ -52,17 +52,19 @@ function Header() {
             variant="h6"
             noWrap
             component="a"
+            href="/dashboard"
             sx={{
               mr: 2,
               display: { xs: "none", md: "flex" },
               fontFamily: "monospace",
               fontWeight: 600,
               letterSpacing: ".2rem",
-              color: "inherit",
-              textDecoration: "none",
+              color: "white",
             }}
           >
-            <Link to="/dashboard">{title}</Link>
+            {/* <Link to="/dashboard" className="white-link"> */}
+            {title}
+            {/* </Link> */}
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
