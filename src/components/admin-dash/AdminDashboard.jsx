@@ -28,7 +28,6 @@ export default function AdminDashboard() {
           setReservations(data);
         }
       });
-
     // realtime subscription for new reservations
     const channel = supabase
       .channel("reservations_changes")
@@ -88,7 +87,7 @@ export default function AdminDashboard() {
     <Box
       sx={{
         padding: 4,
-        // width: "100vw",
+        width: "100vw",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -133,6 +132,10 @@ export default function AdminDashboard() {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {r.message}
+                  <Typography variant="body2" color="text.secondary">
+                    {new Date(r.reservation_time).toLocaleString()} — Party of{" "}
+                    {r.party_size}
+                  </Typography>
                 </Typography>
               </Box>
               <Button
