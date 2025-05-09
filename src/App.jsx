@@ -15,12 +15,12 @@ function Home({ onSuccess }) {
   return (
     <Box
       sx={{
-        margin: "auto",
-        width: "100vw",
+        mx: "auto",
+        maxWidth: "1200",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "calc(100vh - 64px)",
+        minHeight: "100dvh", // dynamic vh handles mobile correctly
         px: 2,
       }}
     >
