@@ -22,6 +22,19 @@ export default function ReservationForm() {
   const [partySize, setPartySize] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [requests, setRequests] = React.useState([]);
+  const [oneSignalUserId, setOneSignalUserId] = React.useState(null);
+
+  // Capture OneSignal player ID once SDK is ready
+  useEffect(() => {
+    if (window.OneSignal) {
+      window.OneSignal.push(() => {
+        OneSignal.getUserId().then((id) => {
+          setOneSignalUserId(id);
+          console.log("OneSignal player ID:", id);
+        });
+      });
+    }
+  }, []);
 
   const validatePhone = (val) => {
     const phoneRegex = /^\+?\d{10,15}$/;
@@ -44,6 +57,7 @@ export default function ReservationForm() {
     else setRequests(data);
   };
 
+  // Load requests whenever phone changes
   useEffect(() => {
     if (phone && validatePhone(phone)) {
       fetchRequests();
@@ -58,11 +72,16 @@ export default function ReservationForm() {
     setLoading(true);
 
     const notifyStaff = true;
-    const { error: insertError } = await supabase
-      .from("reservations")
-      .insert([
-        { phone, message, reservation_time: dateTime, party_size: partySize },
-      ]);
+
+    // 1) Save reservation
+    const { error: insertError } = await supabase.from("reservations").insert([
+      {
+        phone,
+        message,
+        reservation_time: dateTime,
+        party_size: partySize,
+      },
+    ]);
     if (insertError) {
       console.error("Insert error:", insertError);
       setLoading(false);
@@ -71,13 +90,18 @@ export default function ReservationForm() {
 
     await fetchRequests();
 
+    // 2) Trigger Edge Function, include OneSignal ID if available
+    const payload = { phone, message, dateTime, partySize, notifyStaff };
+    if (oneSignalUserId) {
+      payload.oneSignalUserId = oneSignalUserId;
+    }
+
     const { error: fnError } = await supabase.functions.invoke("reservation", {
-      body: { phone, message, dateTime, partySize, notifyStaff },
+      body: payload,
     });
-    // if (Notification.permission === "granted") {
-    // }
     if (fnError) console.error("Function error:", fnError);
 
+    // 3) Reset form fields (phone stays to continue fetching)
     setMessage("");
     setDateTime("");
     setPartySize("");

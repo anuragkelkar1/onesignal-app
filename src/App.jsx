@@ -16,7 +16,7 @@ function Home({ onSuccess }) {
     <Box
       sx={{
         mx: "auto",
-        maxWidth: "1200",
+        width: "100vw",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
