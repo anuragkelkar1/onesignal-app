@@ -37,6 +37,20 @@ export default function ReservationForm() {
     return true;
   };
 
+  // Link this subscription to the 'external_id' = phone
+  useEffect(() => {
+    if (phone && validatePhone(phone) && window.OneSignal) {
+      window.OneSignal.push(async () => {
+        try {
+          await OneSignal.login(phone);
+          console.log("OneSignal linked to external ID:", phone);
+        } catch (e) {
+          console.error("OneSignal.login error:", e);
+        }
+      });
+    }
+  }, [phone]);
+
   const fetchRequests = async () => {
     if (!validatePhone(phone)) return;
     const { data, error } = await supabase
@@ -78,8 +92,6 @@ export default function ReservationForm() {
     const { error: fnError } = await supabase.functions.invoke("reservation", {
       body: { phone, message, dateTime, partySize, notifyStaff },
     });
-    // if (Notification.permission === "granted") {
-    // }
     if (fnError) console.error("Function error:", fnError);
 
     setMessage("");
@@ -121,7 +133,7 @@ export default function ReservationForm() {
                 label="Date & Time"
                 value={dateTime ? dayjs(dateTime) : null}
                 onChange={(newValue) => {
-                  if (newValue) setDateTime(newValue.toISOString()); // store ISO string
+                  if (newValue) setDateTime(newValue.toISOString());
                 }}
                 slotProps={{
                   textField: {

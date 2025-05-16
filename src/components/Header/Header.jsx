@@ -56,8 +56,8 @@ function Header() {
               mr: 2,
               display: { xs: "none", md: "flex" },
               fontFamily: "monospace",
-              fontWeight: 600,
-              letterSpacing: ".2rem",
+              fontWeight: 900,
+              letterSpacing: ".1rem",
             }}
           >
             <Link
@@ -105,19 +105,23 @@ function Header() {
             variant="h5"
             noWrap
             component="a"
-            href="#app-bar-with-responsive-menu"
             sx={{
               mr: 2,
               display: { xs: "flex", md: "none" },
               flexGrow: 1,
               fontFamily: "monospace",
-              fontWeight: 300,
-              letterSpacing: ".3rem",
+              fontWeight: 600,
+              letterSpacing: ".2rem",
               color: "inherit",
               textDecoration: "none",
             }}
           >
-            Owner's Table
+            <Link
+              to="/dashboard"
+              style={{ color: "white", textDecoration: "none" }}
+            >
+              Owner's Table
+            </Link>
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
             {pages.map((page) => (
